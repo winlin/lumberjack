@@ -3,7 +3,7 @@
 // Note that this is v2.0 of lumberjack, and should be imported using gopkg.in
 // thusly:
 //
-//   import "gopkg.in/natefinch/lumberjack.v2"
+//	import "gopkg.in/natefinch/lumberjack.v2"
 //
 // The package name remains simply lumberjack, and the code resides at
 // https://github.com/natefinch/lumberjack under the v2.0 branch.
@@ -66,7 +66,7 @@ var _ io.WriteCloser = (*Logger)(nil)
 // `/var/log/foo/server.log`, a backup created at 6:30pm on Nov 11 2016 would
 // use the filename `/var/log/foo/server-2016-11-04T18-30-00.000.log`
 //
-// Cleaning Up Old Log Files
+// # Cleaning Up Old Log Files
 //
 // Whenever a new logfile gets created, old log files may be deleted.  The most
 // recent files according to the encoded timestamp will be retained, up to a
@@ -218,11 +218,24 @@ func (l *Logger) openNew() error {
 		// Copy the mode off the old logfile.
 		mode = info.Mode()
 		// move the existing file
-		newname := backupName(name, l.LocalTime)
-		if err := os.Rename(name, newname); err != nil {
-			return fmt.Errorf("can't rename log file: %s", err)
+		for i := l.MaxBackups - 1; i >= 0; i-- {
+			backFile := fmt.Sprintf("%s.%d", name, i)
+			if i == 0 {
+				backFile = name
+			}
+			if _, err := osStat(backFile); err != nil { // not existing
+				continue
+			}
+			if i == l.MaxBackups-1 && i > 0 {
+				if err = os.Remove(backFile); err != nil {
+					return fmt.Errorf("can't remove log file:%s err:%s", backFile, err.Error())
+				}
+			} else {
+				if err := os.Rename(backFile, fmt.Sprintf("%s.%d", name, i+1)); err != nil {
+					return fmt.Errorf("can't rename log file: %s", err)
+				}
+			}
 		}
-
 		// this is a no-op anywhere but linux
 		if err := chown(name, info); err != nil {
 			return err
