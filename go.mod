@@ -1,4 +1,4 @@
-module github.com/GXKe/lumberjack
+module github.com/winlin/lumberjack
 
 require (
 	github.com/BurntSushi/toml v1.2.0
